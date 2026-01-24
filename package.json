@@ -1,0 +1,15 @@
+{
+  "name": "tokiem-monorepo",
+  "private": true,
+  "workspaces": [
+    "api",
+    "web"
+  ],
+  "scripts": {
+    "build:api": "yarn workspace tokiem-api build",
+    "start:api": "yarn workspace tokiem-api start:prod",
+    "build:web": "yarn workspace tokiem-web build",
+    "dev:api": "yarn workspace tokiem-api start:dev",
+    "dev:web": "yarn workspace tokiem-web dev"
+  }
+}
