@@ -4,6 +4,7 @@ import { apiFetch, ApiError } from '@/lib/api';
 export interface Vessel {
   id: string;
   tag_id: string;
+  sender_id: string | null;
   created_at: string;
 }
 

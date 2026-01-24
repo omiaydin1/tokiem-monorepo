@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useVessel, useMemoryByTagId } from '@/hooks/useVessel';
 import Seal from './Seal';
@@ -6,6 +7,7 @@ import { Heart, Search } from 'lucide-react';
 
 export default function Vessel() {
   const { tagId } = useParams<{ tagId: string }>();
+  const [justSealed, setJustSealed] = useState(false);
   const { data: vessel, isLoading: vesselLoading, error: vesselError } = useVessel(tagId);
   const { data: memory, isLoading: memoryLoading } = useMemoryByTagId(tagId);
 
@@ -36,11 +38,19 @@ export default function Vessel() {
     );
   }
 
-  // If there's a memory, show the View page
-  if (memory) {
-    return <View memory={memory} />;
+  // If there's a memory AND we're not in "just sealed" mode, show View
+  if (memory && !justSealed) {
+    return <View memory={memory} tagId={tagId} vessel={vessel} />;
   }
 
-  // Otherwise, show the Seal page
-  return <Seal vessel={vessel} existingMemory={memory} />;
+  // Otherwise, show the Seal page (handles both no-memory and just-sealed states)
+  return (
+    <Seal 
+      vessel={vessel} 
+      existingMemory={memory} 
+      tagId={tagId}
+      onSealed={() => setJustSealed(true)}
+      onViewMemory={() => setJustSealed(false)}
+    />
+  );
 }

@@ -43,15 +43,24 @@ export class MemoriesService {
 
     const client = this.supabase.getClient();
     
-    // Check if memory already exists
-    const { data: existingMemory } = await client
+    // Check existing memories count
+    const { count, error: countError } = await client
       .from('memories')
-      .select('id')
-      .eq('vessel_id', vessel.id)
-      .maybeSingle();
+      .select('*', { count: 'exact', head: true })
+      .eq('vessel_id', vessel.id);
 
-    if (existingMemory) {
-      throw new ConflictException('Vessel already has a memory');
+    if (countError) {
+      throw new Error(countError.message);
+    }
+
+    const memoryLimit = vessel.sender_id ? 5 : 1;
+
+    if (count !== null && count >= memoryLimit) {
+      if (vessel.sender_id) {
+        throw new ConflictException('This vessel has reached its limit of 5 memories');
+      } else {
+        throw new ConflictException('This vessel already has a memory. Sign in to add up to 5 memories!');
+      }
     }
 
     const { data, error } = await client

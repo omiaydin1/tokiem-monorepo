@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useVessel, useMemoryByTagId, Vessel, Memory } from '@/hooks/useVessel';
@@ -9,23 +9,48 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Circle, Square, RotateCcw, CheckCircle, Heart, Upload, Camera, X } from 'lucide-react';
+import { Loader2, Circle, Square, RotateCcw, CheckCircle, Heart, Upload, Camera, X, UserPlus, Info, Mail, ArrowRight } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface SealProps {
   vessel?: Vessel | null;
   existingMemory?: Memory | null;
+  tagId?: string;
+  onSealed?: () => void;
+  onViewMemory?: () => void;
 }
 
-export default function Seal({ vessel: initialVessel, existingMemory: initialMemory }: SealProps) {
-  const { tagId } = useParams<{ tagId: string }>();
+export default function Seal({ vessel: initialVessel, existingMemory: initialMemory, tagId: propTagId, onSealed, onViewMemory }: SealProps) {
+  const { tagId: routeTagId } = useParams<{ tagId: string }>();
+  const tagId = propTagId || routeTagId;
   const [gifterName, setGifterName] = useState('');
   const [noteText, setNoteText] = useState('');
   const [isSealed, setIsSealed] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
   const [mode, setMode] = useState<'record' | 'upload'>('record');
+  const [session, setSession] = useState<any>(null);
+  const [email, setEmail] = useState('');
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const { data: fetchedVessel, isLoading: vesselLoading } = useVessel(
     initialVessel ? undefined : tagId
@@ -36,6 +61,61 @@ export default function Seal({ vessel: initialVessel, existingMemory: initialMem
 
   const vessel = initialVessel ?? fetchedVessel;
   const existingMemory = initialMemory ?? fetchedMemory;
+
+  const handleMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAuthLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.origin + `/v/${tagId}`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Magic link sent!",
+        description: "Check your email to sign in and claim this vessel.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  const claimMutation = useMutation({
+    mutationFn: async () => {
+      if (!session?.access_token) return;
+      return apiFetch(`/vessels/${tagId}/claim`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Vessel Claimed!",
+        description: "You are now the sender of this vessel.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['vessel', tagId] });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    },
+  });
 
   const {
     isRecording,
@@ -131,7 +211,7 @@ export default function Seal({ vessel: initialVessel, existingMemory: initialMem
     },
     onSuccess: () => {
       setIsSealed(true);
-      queryClient.invalidateQueries({ queryKey: ['memory', tagId] });
+      onSealed?.();
     },
   });
 
@@ -152,22 +232,76 @@ export default function Seal({ vessel: initialVessel, existingMemory: initialMem
     );
   }
 
-  if (existingMemory) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
-        <CheckCircle className="h-16 w-16 text-primary mb-6" />
-        <h1 className="text-3xl mb-4">Already Sealed</h1>
-        <p className="text-muted-foreground">This vessel already contains a memory.</p>
-      </div>
-    );
-  }
-
   if (isSealed) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center max-w-md mx-auto">
         <CheckCircle className="h-20 w-20 text-primary mb-8" />
         <h1 className="text-4xl mb-4">Sealed</h1>
-        <p className="text-xl text-muted-foreground">Give this to someone special.</p>
+        <p className="text-xl text-muted-foreground mb-12">This memory is now anchored to your vessel.</p>
+        
+        {!vessel.sender_id && (
+          <div className="w-full p-8 rounded-2xl bg-secondary/30 border border-primary/5 backdrop-blur-sm mb-8 text-left animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {session ? (
+              <div className="space-y-4 text-center">
+                <h3 className="text-lg font-medium">Claim this Vessel</h3>
+                <p className="text-sm text-muted-foreground">
+                  You are signed in as {session.user.email}. Claim this vessel to unlock 5 memories and manage it anytime.
+                </p>
+                <Button 
+                  onClick={() => claimMutation.mutate()} 
+                  disabled={claimMutation.isPending}
+                  className="rounded-full w-full"
+                >
+                  {claimMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Claim as Sender"}
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleMagicLink} className="space-y-4">
+                <div className="space-y-2 text-center">
+                  <h3 className="text-lg font-medium">Want to add more?</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Create an account to unlock up to 5 memories and manage this vessel without scanning.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="bg-background/50 rounded-full px-4"
+                  />
+                  <Button type="submit" disabled={isAuthLoading} className="rounded-full px-6 whitespace-nowrap">
+                    {isAuthLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Get Started"}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest text-center">
+                  <Mail className="h-3 w-3 inline mr-1 mb-0.5" /> Magic link only &bull; Quick setup
+                </p>
+              </form>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-4 w-full">
+          <Button 
+            className="rounded-full py-6 text-lg"
+            onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ['memory', tagId] });
+              onViewMemory?.();
+            }}
+          >
+            View Memory <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            className="rounded-full"
+            onClick={() => setIsSealed(false)}
+          >
+            Add another memory
+          </Button>
+        </div>
       </div>
     );
   }
@@ -176,7 +310,7 @@ export default function Seal({ vessel: initialVessel, existingMemory: initialMem
     <div className="min-h-screen py-12 px-6 max-w-lg mx-auto">
       <div className="text-center mb-10">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
-          <Heart className="h-6 w-6 text-primary fill-primary/10" />
+          <Heart className="h-6 w-6 text-primary fill-primary/20" />
         </div>
         <h1 className="text-4xl mb-3">Seal a Memory</h1>
         <p className="text-muted-foreground">Capture or upload a moment for someone special.</p>
@@ -374,7 +508,7 @@ export default function Seal({ vessel: initialVessel, existingMemory: initialMem
 
           {sealMutation.isError && (
             <p className="text-destructive text-sm text-center">
-              Something went wrong. Please try again.
+              {sealMutation.error.message || 'Something went wrong. Please try again.'}
             </p>
           )}
         </div>

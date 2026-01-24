@@ -7,6 +7,9 @@ export class VesselResponse {
   @ApiProperty({ example: 'V12345' })
   tag_id: string;
 
+  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000', required: false })
+  sender_id: string | null;
+
   @ApiProperty({ example: '2024-01-24T12:00:00Z' })
   created_at: string;
 }

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Vessel from "./pages/Vessel";
 import NotFound from "./pages/NotFound";
+import { Navbar } from "./components/Navbar";
 
 const queryClient = new QueryClient();
 
@@ -15,12 +16,14 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/m/:tagId" element={<Vessel />} />
-          <Route path="/:tagId" element={<Vessel />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <div className="min-h-screen pt-16">
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/v/:tagId" element={<Vessel />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </div>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

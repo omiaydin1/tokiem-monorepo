@@ -8,7 +8,14 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const url = `${API_URL}${endpoint}`;
+  
+  // Debug log for authentication
+  if (options?.headers && (options.headers as any)['Authorization']) {
+    console.log(`[apiFetch] Sending request to ${endpoint} with Authorization header (token len: ${(options.headers as any)['Authorization'].length})`);
+  }
+
+  const response = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
