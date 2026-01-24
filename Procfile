@@ -1,1 +1,1 @@
-web: yarn start:api
+web: cd api && yarn start:prod
