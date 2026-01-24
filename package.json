@@ -1,0 +1,14 @@
+{
+  "name": "tokiem-monorepo",
+  "private": true,
+  "scripts": {
+    "install:api": "cd api && yarn install",
+    "install:web": "cd web && yarn install",
+    "build:api": "cd api && yarn build",
+    "build:web": "cd web && yarn build",
+    "dev:api": "cd api && yarn start:dev",
+    "dev:web": "cd web && yarn dev",
+    "start:api": "cd api && yarn start:prod",
+    "db:push": "cd supabase && supabase db push"
+  }
+}

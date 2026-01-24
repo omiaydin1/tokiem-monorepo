@@ -31,7 +31,7 @@ CREATE POLICY "Public insert memories" ON memories FOR INSERT WITH CHECK (true);
 
 -- Create storage bucket for memories
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES ('memories', 'memories', true, 104857600, ARRAY['video/webm', 'video/mp4', 'audio/webm', 'audio/mp3', 'audio/mpeg', 'audio/wav']);
+VALUES ('memories', 'memories', true, 104857600, ARRAY['video/webm', 'video/mp4', 'audio/webm', 'audio/mp3', 'audio/mpeg', 'audio/wav', 'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif']);
 
 -- Storage policies for public upload and read
 CREATE POLICY "Public upload memories" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'memories');

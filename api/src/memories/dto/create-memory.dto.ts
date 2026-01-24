@@ -7,11 +7,11 @@ export class CreateMemoryDto {
   @IsNotEmpty()
   mediaUrl: string;
 
-  @ApiProperty({ enum: ['video', 'audio'], example: 'video' })
+  @ApiProperty({ enum: ['video', 'audio', 'image'], example: 'video' })
   @IsString()
   @IsNotEmpty()
-  @IsIn(['video', 'audio'])
-  mediaType: 'video' | 'audio';
+  @IsIn(['video', 'audio', 'image'])
+  mediaType: 'video' | 'audio' | 'image';
 
   @ApiProperty({ example: 'John Doe' })
   @IsString()
