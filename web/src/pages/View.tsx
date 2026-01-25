@@ -346,7 +346,7 @@ export default function View({ memories: initialMemories, tagId: propTagId, caps
 
   if (!memories || memories.length === 0) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-6 text-center">
+      <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center pb-40 px-6 text-center">
         <div className="w-24 h-24 rounded-full bg-primary/5 flex items-center justify-center mb-8 animate-pulse">
           <Heart className="h-12 w-12 text-primary/20" />
         </div>

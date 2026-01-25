@@ -68,7 +68,7 @@ export default function Vessel() {
   // Handle case where vessel doesn't exist in DB
   if (capsuleError || !capsule) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center pb-40 px-6 text-center">
         <Search className="h-16 w-16 text-muted-foreground/30 mb-6" />
         <h1 className="text-3xl mb-4 font-serif">Capsule Not Found</h1>
         <p className="text-muted-foreground max-w-xs">

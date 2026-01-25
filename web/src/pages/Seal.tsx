@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Square, RotateCcw, CheckCircle, Heart, Upload, Camera, X, ArrowRight, Edit3, ChevronLeft, Search } from 'lucide-react';
+import { Loader2, Square, RotateCcw, CheckCircle, Heart, Upload, Camera, X, ArrowRight, Edit3, ChevronLeft, Search, Sparkles } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -31,7 +31,13 @@ export default function Seal({ capsule: initialCapsule, existingMemory: initialM
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
   const [mode, setMode] = useState<'upload' | 'record'>('upload');
   const [session, setSession] = useState<any>(null);
-  
+
+  useEffect(() => {
+    if (isSealed) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isSealed]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -127,9 +133,9 @@ export default function Seal({ capsule: initialCapsule, existingMemory: initialM
         '/upload/presign',
         {
           method: 'POST',
-          body: JSON.stringify({ 
-            fileName, 
-            contentType: fileType 
+          body: JSON.stringify({
+            fileName,
+            contentType: fileType
           }),
         }
       );
@@ -216,14 +222,22 @@ export default function Seal({ capsule: initialCapsule, existingMemory: initialM
 
   if (isSealed) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-6 text-center max-w-md mx-auto">
-        <CheckCircle className="h-20 w-20 text-primary mb-8" />
-        <h1 className="text-4xl mb-4 font-serif">Sealed</h1>
-        <p className="text-xl text-muted-foreground mb-12">This memory is now sealed to your capsule.</p>
-        
-        <div className="flex flex-col gap-4 w-full">
-          <Button 
-            className="rounded-full py-6 text-lg"
+      <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center pb-40 px-6 text-center max-w-md mx-auto animate-in fade-in duration-1000">
+        <div className="relative mb-8">
+          <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse" />
+          <div className="relative bg-white rounded-full p-4 shadow-xl border-4 border-primary/10 animate-in zoom-in spin-in-90 duration-700 delay-300 fill-mode-both">
+            <CheckCircle className="h-16 w-16 text-primary" />
+          </div>
+          <Sparkles className="absolute -top-2 -right-2 h-6 w-6 text-yellow-400 animate-bounce" />
+          <Sparkles className="absolute -bottom-2 -left-2 h-4 w-4 text-yellow-400 animate-bounce delay-150" />
+        </div>
+
+        <h1 className="text-4xl mb-4 font-serif animate-in slide-in-from-bottom-4 duration-700 delay-500 fill-mode-both">Memory Sealed!</h1>
+        <p className="text-xl text-muted-foreground mb-12 animate-in slide-in-from-bottom-4 duration-700 delay-700 fill-mode-both">This memory is now sealed to the capsule forever. Have the recipient scan it to view.</p>
+
+        <div className="flex flex-col gap-4 w-full animate-in slide-in-from-bottom-4 duration-700 delay-1000 fill-mode-both">
+          <Button
+            className="rounded-full py-6 text-lg shadow-lg hover:shadow-xl transition-all active:scale-95"
             onClick={() => {
               queryClient.invalidateQueries({ queryKey: ['memory', tagId] });
               onViewMemory?.();
@@ -358,7 +372,7 @@ export default function Seal({ capsule: initialCapsule, existingMemory: initialM
                   accept="video/*,image/*"
                   onChange={handleFileChange}
                 />
-                
+
                 {uploadFile && activePreviewUrl ? (
                   <div className="relative w-full h-full">
                     {uploadFile.type.startsWith('image/') ? (
@@ -376,7 +390,7 @@ export default function Seal({ capsule: initialCapsule, existingMemory: initialM
                     </Button>
                   </div>
                 ) : (
-                  <div 
+                  <div
                     className="flex flex-col items-center justify-center cursor-pointer w-full h-full hover:bg-muted transition-colors duration-300"
                     onClick={() => fileInputRef.current?.click()}
                   >
