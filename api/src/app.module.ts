@@ -6,6 +6,7 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { VesselsModule } from './vessels/vessels.module';
 import { MemoriesModule } from './memories/memories.module';
 import { StorageModule } from './storage/storage.module';
+import { ProfilesModule } from './profiles/profiles.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { StorageModule } from './storage/storage.module';
     VesselsModule,
     MemoriesModule,
     StorageModule,
+    ProfilesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -21,18 +21,40 @@ export class VesselsService {
     return data;
   }
 
+  async updateName(tagId: string, name: string, userId: string) {
+    const vessel = await this.findByTagId(tagId);
+    
+    if (vessel.sender_id && vessel.sender_id !== userId) {
+      throw new ConflictException('Only the sender can update the vessel name');
+    }
+
+    const client = this.supabase.getClient();
+    const { data, error } = await client
+      .from('vessels')
+      .update({ name })
+      .eq('tag_id', tagId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
   async findAllBySenderId(senderId: string) {
     const client = this.supabase.getClient();
     const { data, error } = await client
       .from('vessels')
-      .select('*')
+      .select('*, memories(count)')
       .eq('sender_id', senderId);
 
     if (error) {
       throw new Error(error.message);
     }
 
-    return data;
+    return (data || []).map(vessel => ({
+      ...vessel,
+      memory_count: vessel.memories?.[0]?.count || 0
+    }));
   }
 
   async claim(tagId: string, userId: string) {
@@ -71,6 +93,7 @@ export class VesselsService {
       .insert([
         {
           tag_id: createVesselDto.tagId,
+          jewelry_type: createVesselDto.jewelryType || 'necklace',
         },
       ])
       .select()

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Heart, User, LogOut, Loader2, Mail } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Heart, User, LogOut, Loader2, Mail, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,13 +13,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useProfile } from "@/hooks/useVessel";
 
 export const Navbar = () => {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [session, setSession] = useState<any>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -35,25 +38,34 @@ export const Navbar = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleMagicLink = async (e: React.FormEvent) => {
+  const { data: profile } = useProfile(session?.access_token);
+
+  const handleAuth = async (e: React.FormEvent, type: 'login' | 'signup') => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: window.location.origin,
-        },
-      });
+      const { data, error } = type === 'login' 
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({ email, password });
 
       if (error) throw error;
 
-      toast({
-        title: "Magic link sent!",
-        description: "Check your email to sign in.",
-      });
+      if (type === 'signup') {
+        if (data.session) {
+          toast({
+            title: "Account created!",
+            description: "Welcome to Tokiem.",
+          });
+        } else {
+          toast({
+            title: "Check your email",
+            description: "Please confirm your account to sign in.",
+          });
+        }
+      }
       setEmail("");
+      setPassword("");
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -74,7 +86,7 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 h-16 border-b bg-background/80 backdrop-blur-md z-50">
+    <nav className="fixed top-0 left-0 right-0 h-16 border-b bg-secondary/95 backdrop-blur-md z-50">
       <div className="max-w-5xl mx-auto h-full flex items-center justify-between px-6">
         <Link to="/" className="flex items-center gap-2 group">
           <Heart className="h-5 w-5 text-primary fill-primary/10 group-hover:fill-primary/20 transition-colors" />
@@ -86,7 +98,8 @@ export const Navbar = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
                 {session ? (
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-8 w-8 border border-primary/10">
+                    <AvatarImage src={profile?.avatar_url || ''} />
                     <AvatarFallback className="bg-primary/5 text-primary">
                       <User className="h-4 w-4" />
                     </AvatarFallback>
@@ -100,42 +113,71 @@ export const Navbar = () => {
               {session ? (
                 <>
                   <DropdownMenuLabel className="font-normal px-2 pb-3">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Signed in as</p>
-                      <p className="text-sm font-medium leading-none">{session.user.email}</p>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={profile?.avatar_url || ''} />
+                        <AvatarFallback className="bg-primary/5 text-primary">
+                          {profile?.full_name?.charAt(0) || <User className="h-5 w-5" />}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col space-y-0.5">
+                        <p className="text-sm font-semibold leading-none">{profile?.full_name || 'No Name Set'}</p>
+                        <p className="text-xs text-muted-foreground">{session.user.email}</p>
+                      </div>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive cursor-pointer">
+                  <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer py-2">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Profile Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive cursor-pointer py-2">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sign out</span>
                   </DropdownMenuItem>
                 </>
               ) : (
-                <form onSubmit={handleMagicLink} className="space-y-4">
+                <div className="space-y-4">
                   <div className="space-y-1">
                     <h3 className="font-medium text-sm">Sign in / Create Account</h3>
                     <p className="text-xs text-muted-foreground">
-                      Enter your email to receive a magic link.
+                      Enter your details to manage your vessels.
                     </p>
                   </div>
-                  <div className="flex flex-col gap-2">
+                  <form onSubmit={(e) => handleAuth(e, 'login')} className="space-y-2">
                     <Input
                       type="email"
-                      placeholder="your@email.com"
+                      placeholder="Email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       className="h-9"
                     />
-                    <Button type="submit" disabled={isLoading} className="w-full h-9">
-                      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send Magic Link"}
-                    </Button>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground text-center uppercase tracking-widest">
-                    <Mail className="h-3 w-3 inline mr-1 mb-0.5" /> Magic link only
-                  </p>
-                </form>
+                    <Input
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="h-9"
+                    />
+                    <div className="flex gap-2">
+                      <Button type="submit" disabled={isLoading} className="flex-1 h-9">
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Log In"}
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={(e) => handleAuth(e, 'signup')} 
+                        disabled={isLoading} 
+                        className="flex-1 h-9"
+                      >
+                        Sign Up
+                      </Button>
+                    </div>
+                  </form>
+                </div>
               )}
             </DropdownMenuContent>
           </DropdownMenu>

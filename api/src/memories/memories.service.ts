@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { VesselsService } from '../vessels/vessels.service';
+import { ProfilesService } from '../profiles/profiles.service';
 import { CreateMemoryDto } from './dto/create-memory.dto';
 import { Response } from 'express';
 
@@ -15,6 +16,7 @@ export class MemoriesService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly vesselsService: VesselsService,
+    private readonly profilesService: ProfilesService,
   ) {}
 
   async getMemoryByTagId(tagId: string, res: Response) {
@@ -23,22 +25,39 @@ export class MemoriesService {
     const client = this.supabase.getClient();
     const { data, error } = await client
       .from('memories')
-      .select('*')
+      .select('*, vessels!inner(sender_id)')
       .eq('vessel_id', vessel.id)
-      .maybeSingle();
+      .order('created_at', { ascending: false });
 
     if (error) {
       throw new Error(error.message);
     }
 
-    if (!data) {
+    if (!data || data.length === 0) {
       return res.status(HttpStatus.NO_CONTENT).send();
     }
 
-    return res.status(HttpStatus.OK).json(data);
+    // Fetch sender profile if exists
+    const senderId = data[0]?.vessels?.sender_id;
+    let profile = null;
+    if (senderId) {
+      const { data: profileData } = await client
+        .from('profiles')
+        .select('*')
+        .eq('id', senderId)
+        .maybeSingle();
+      profile = profileData;
+    }
+
+    const memoriesWithProfile = data.map(memory => ({
+      ...memory,
+      sender_profile: profile,
+    }));
+
+    return res.status(HttpStatus.OK).json(memoriesWithProfile);
   }
 
-  async create(tagId: string, createMemoryDto: CreateMemoryDto) {
+  async create(tagId: string, createMemoryDto: CreateMemoryDto, userId: string) {
     const vessel = await this.vesselsService.findByTagId(tagId);
 
     const client = this.supabase.getClient();
@@ -53,14 +72,24 @@ export class MemoriesService {
       throw new Error(countError.message);
     }
 
-    const memoryLimit = vessel.sender_id ? 5 : 1;
+    // 1. If no sender_id, this user becomes the sender
+    if (!vessel.sender_id) {
+      await this.vesselsService.claim(tagId, userId);
+      vessel.sender_id = userId;
+      
+      // Update vessel name if provided on first creation
+      if (createMemoryDto.vesselName) {
+        await this.vesselsService.updateName(tagId, createMemoryDto.vesselName, userId);
+      }
+    } else if (vessel.sender_id !== userId) {
+      // 2. If sender_id exists and is not this user, they cannot add memories
+      throw new ConflictException('Only the sender can add memories to this vessel');
+    }
+
+    const memoryLimit = 5; // Simplified: senders can always add up to 5
 
     if (count !== null && count >= memoryLimit) {
-      if (vessel.sender_id) {
-        throw new ConflictException('This vessel has reached its limit of 5 memories');
-      } else {
-        throw new ConflictException('This vessel already has a memory. Sign in to add up to 5 memories!');
-      }
+      throw new ConflictException(`This vessel has reached its limit of ${memoryLimit} memories`);
     }
 
     const { data, error } = await client
@@ -70,7 +99,7 @@ export class MemoriesService {
           vessel_id: vessel.id,
           media_url: createMemoryDto.mediaUrl,
           media_type: createMemoryDto.mediaType,
-          gifter_name: createMemoryDto.gifterName,
+          gifter_name: createMemoryDto.gifterName || null,
           note_text: createMemoryDto.noteText,
         },
       ])

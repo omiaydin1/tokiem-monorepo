@@ -15,7 +15,7 @@ export class VesselsController {
   @ApiOperation({ summary: 'Get all vessels claimed by the current user' })
   @ApiResponse({ status: 200, type: [VesselResponse] })
   findAll(@Request() req) {
-    return this.vesselsService.findAllBySenderId(req.user.sub);
+    return this.vesselsService.findAllBySenderId(req.user.id);
   }
 
   @Get(':tagId')
@@ -31,7 +31,19 @@ export class VesselsController {
   @ApiOperation({ summary: 'Claim a vessel as a sender' })
   @ApiResponse({ status: 200, type: VesselResponse })
   claim(@Param('tagId') tagId: string, @Request() req) {
-    return this.vesselsService.claim(tagId, req.user.sub);
+    return this.vesselsService.claim(tagId, req.user.id);
+  }
+
+  @Post(':tagId/name')
+  @UseGuards(SupabaseAuthGuard)
+  @ApiOperation({ summary: 'Update vessel name' })
+  @ApiResponse({ status: 200, type: VesselResponse })
+  updateName(
+    @Param('tagId') tagId: string, 
+    @Body('name') name: string,
+    @Request() req
+  ) {
+    return this.vesselsService.updateName(tagId, name, req.user.id);
   }
 
   @Post()

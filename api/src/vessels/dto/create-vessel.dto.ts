@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateVesselDto {
@@ -6,4 +6,9 @@ export class CreateVesselDto {
   @IsString()
   @IsNotEmpty()
   tagId: string;
+
+  @ApiProperty({ example: 'necklace', enum: ['ring', 'necklace', 'bracelet'], required: false })
+  @IsString()
+  @IsOptional()
+  jewelryType?: 'ring' | 'necklace' | 'bracelet';
 }

@@ -24,6 +24,6 @@ export class SupabaseStrategy extends PassportStrategy(Strategy, 'supabase') {
   }
 
   async validate(payload: any) {
-    return payload;
+    return { ...payload, id: payload.sub };
   }
 }

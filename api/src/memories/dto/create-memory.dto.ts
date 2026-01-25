@@ -13,13 +13,18 @@ export class CreateMemoryDto {
   @IsIn(['video', 'audio', 'image'])
   mediaType: 'video' | 'audio' | 'image';
 
-  @ApiProperty({ example: 'John Doe' })
+  @ApiProperty({ example: 'John Doe', required: false })
   @IsString()
-  @IsNotEmpty()
-  gifterName: string;
+  @IsOptional()
+  gifterName?: string;
 
   @ApiProperty({ example: 'Happy birthday!', required: false })
   @IsString()
   @IsOptional()
   noteText?: string;
+
+  @ApiProperty({ example: 'My First Vessel', required: false })
+  @IsString()
+  @IsOptional()
+  vesselName?: string;
 }

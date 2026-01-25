@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Heart, Sparkles, Anchor, Gift, Loader2, ArrowRight } from 'lucide-react';
+import { Heart, Sparkles, Anchor, Gift, Loader2, ArrowRight, CircleDot, Circle, Gem } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { apiFetch } from '@/lib/api';
@@ -9,6 +9,15 @@ const Index = () => {
   const [session, setSession] = useState<any>(null);
   const [myVessels, setMyVessels] = useState<Vessel[]>([]);
   const [vesselsLoading, setVesselsLoading] = useState(false);
+
+  const getVesselIcon = (type: string | null) => {
+    switch (type) {
+      case 'ring': return <CircleDot className="h-5 w-5 text-primary" />;
+      case 'bracelet': return <Circle className="h-5 w-5 text-primary" />;
+      case 'necklace': return <Gem className="h-5 w-5 text-primary" />;
+      default: return <Gem className="h-5 w-5 text-primary" />;
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -64,30 +73,42 @@ const Index = () => {
 
         {/* Sender Section */}
         {session && (
-          <div className="max-w-md mx-auto mb-16 p-8 rounded-2xl bg-secondary/30 border border-primary/5 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-700 delay-400">
+          <div className="max-w-md mx-auto mb-16 p-8 rounded-2xl bg-secondary/40 border border-border animate-in fade-in slide-in-from-bottom-4 duration-700 delay-400 shadow-sm">
             <div className="text-left space-y-4">
               <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground px-2">Your Vessels</h3>
 
               {vesselsLoading ? (
-                <div className="flex justify-center py-4">
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : myVessels.length > 0 ? (
-                <div className="grid gap-2">
+                <div className="grid gap-3">
                   {myVessels.map((v) => (
                     <Link
                       key={v.id}
                       to={`/v/${v.tag_id}`}
-                      className="flex items-center justify-between p-4 rounded-xl bg-background/50 hover:bg-background/80 transition-colors border border-primary/5 group"
+                      className="flex items-center justify-between p-4 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-all border border-border group"
                     >
-                      <span className="font-medium">Vessel {v.tag_id}</span>
-                      <ArrowRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="flex items-center gap-4">
+                        <div className="w-11 h-11 rounded-xl bg-background border border-border shadow-sm flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+                          {getVesselIcon(v.jewelry_type)}
+                        </div>
+                        <div className="flex flex-col text-left">
+                          <span className="font-bold text-base tracking-tight">{v.name || `Vessel ${v.tag_id}`}</span>
+                          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.1em] mt-0.5">
+                            {v.memory_count || 0} {v.memory_count === 1 ? 'Memory' : 'Memories'} Anchored
+                          </span>
+                        </div>
+                      </div>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                        <ArrowRight className="h-4 w-4 text-primary/40 group-hover:text-primary transition-colors" />
+                      </div>
                     </Link>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-6 px-4 border-2 border-dashed border-primary/10 rounded-xl">
-                  <p className="text-xs text-muted-foreground">You haven't claimed any vessels yet. Scan a vessel to get started!</p>
+                <div className="text-center py-6 px-4 border-2 border-dashed border-border rounded-xl">
+                  <p className="text-xs text-muted-foreground font-medium">You haven't claimed any vessels yet.</p>
                 </div>
               )}
             </div>
@@ -128,12 +149,6 @@ const Index = () => {
           </p>
         </div>
       </div>
-
-      <footer className="absolute bottom-8 text-center w-full px-6">
-        <p className="text-xs text-muted-foreground/60 font-sans tracking-widest uppercase">
-          &copy; {new Date().getFullYear()} Tokiem &mdash; Handcrafted Memories
-        </p>
-      </footer>
     </div>
   );
 };
