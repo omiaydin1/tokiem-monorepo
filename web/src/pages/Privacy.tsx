@@ -21,7 +21,7 @@ export default function Privacy() {
         <section>
           <h2 className="text-xl font-serif text-foreground mb-4">2. How We Use Your Information</h2>
           <p>
-            We use your information to provide and improve our services, communicate with you about your account, and ensure the security of our platform. Your uploaded media is only made accessible to those who have the unique link or access to the physical vessel.
+            We use your information to provide and improve our services, communicate with you about your account, and ensure the security of our platform. Your uploaded media is only made accessible to those who have the unique link or access to the physical capsule.
           </p>
         </section>
 

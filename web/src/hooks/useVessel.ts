@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, ApiError } from '@/lib/api';
 
-export interface Vessel {
+export interface Capsule {
   id: string;
   tag_id: string;
   name: string | null;
@@ -25,24 +25,24 @@ export interface Memory {
   } | null;
 }
 
-export function useVessel(tagId: string | undefined) {
+export function useCapsule(tagId: string | undefined) {
   return useQuery({
-    queryKey: ['vessel', tagId],
+    queryKey: ['capsule', tagId],
     queryFn: async () => {
       if (!tagId) throw new Error('No tag ID provided');
-      return apiFetch<Vessel>(`/vessels/${tagId}`);
+      return apiFetch<Capsule>(`/vessels/${tagId}`);
     },
     enabled: !!tagId,
-    retry: false, // Don't retry if vessel not found (likely a 404)
+    retry: false, // Don't retry if capsule not found (likely a 404)
   });
 }
 
-export function useUpdateVesselName(tagId: string | undefined) {
+export function useUpdateCapsuleName(tagId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ name, token }: { name: string; token: string }) => {
       if (!tagId) throw new Error('No tag ID provided');
-      return apiFetch<Vessel>(`/vessels/${tagId}/name`, {
+      return apiFetch<Capsule>(`/vessels/${tagId}/name`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -51,7 +51,7 @@ export function useUpdateVesselName(tagId: string | undefined) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vessel', tagId] });
+      queryClient.invalidateQueries({ queryKey: ['capsule', tagId] });
     },
   });
 }

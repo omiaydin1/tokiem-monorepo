@@ -1,29 +1,30 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useVessel, useMemoryByTagId, Vessel, Memory } from '@/hooks/useVessel';
+import { useCapsule, useMemoryByTagId, Capsule, Memory } from '@/hooks/useVessel';
 import { useMediaRecorder } from '@/hooks/useMediaRecorder';
 import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Square, RotateCcw, CheckCircle, Heart, Upload, Camera, X, ArrowRight, Edit3 } from 'lucide-react';
+import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2, Square, RotateCcw, CheckCircle, Heart, Upload, Camera, X, ArrowRight, Edit3, ChevronLeft } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface SealProps {
-  vessel?: Vessel | null;
+  capsule?: Capsule | null;
   existingMemory?: Memory[] | null;
   tagId?: string;
   onSealed?: () => void;
   onViewMemory?: () => void;
 }
 
-export default function Seal({ vessel: initialVessel, existingMemory: initialMemory, tagId: propTagId, onSealed, onViewMemory }: SealProps) {
+export default function Seal({ capsule: initialCapsule, existingMemory: initialMemory, tagId: propTagId, onSealed, onViewMemory }: SealProps) {
   const { tagId: routeTagId } = useParams<{ tagId: string }>();
   const tagId = propTagId || routeTagId;
-  const [vesselName, setVesselName] = useState('');
+  const [capsuleName, setCapsuleName] = useState('');
   const [noteText, setNoteText] = useState('');
   const [isSealed, setIsSealed] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -49,21 +50,21 @@ export default function Seal({ vessel: initialVessel, existingMemory: initialMem
     return () => subscription.unsubscribe();
   }, []);
 
-  const { data: fetchedVessel, isLoading: vesselLoading } = useVessel(
-    initialVessel ? undefined : tagId
+  const { data: fetchedCapsule, isLoading: vesselLoading } = useCapsule(
+    initialCapsule ? undefined : tagId
   );
   const { data: fetchedMemory, isLoading: memoryLoading } = useMemoryByTagId(
     initialMemory ? undefined : tagId
   );
 
-  const vessel = initialVessel ?? fetchedVessel;
+  const capsule = initialCapsule ?? fetchedCapsule;
   const existingMemory = initialMemory ?? fetchedMemory;
 
   useEffect(() => {
-    if (vessel?.name) {
-      setVesselName(vessel.name);
+    if (capsule?.name) {
+      setCapsuleName(capsule.name);
     }
-  }, [vessel]);
+  }, [capsule]);
 
   const {
     isRecording,
@@ -156,31 +157,59 @@ export default function Seal({ vessel: initialVessel, existingMemory: initialMem
           mediaUrl: publicUrl,
           mediaType,
           noteText: noteText.trim() || null,
-          vesselName: vesselName.trim() || null,
+          vesselName: capsuleName.trim() || null,
         }),
       });
     },
     onSuccess: () => {
       setIsSealed(true);
       onSealed?.();
-      queryClient.invalidateQueries({ queryKey: ['vessel', tagId] });
+      queryClient.invalidateQueries({ queryKey: ['capsule', tagId] });
       queryClient.invalidateQueries({ queryKey: ['memory', tagId] });
     },
   });
 
   if (vesselLoading || memoryLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-[calc(100vh-4rem)] flex flex-col bg-background">
+        <div className="max-w-xl mx-auto w-full px-6 pt-12 pb-8">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 flex-1">
+              <Skeleton className="w-10 h-10 rounded-xl bg-secondary/30" />
+              <Skeleton className="h-10 w-48 bg-secondary/30" />
+            </div>
+            <Skeleton className="h-10 w-32 rounded-xl bg-secondary/30" />
+          </div>
+        </div>
+        <div className="max-w-xl mx-auto w-full px-4 py-4">
+          {[1, 2].map((i) => (
+            <div key={i} className="w-full bg-secondary/20 rounded-3xl overflow-hidden border border-border mb-8 animate-pulse">
+              <Skeleton className="w-full aspect-video bg-secondary/30" />
+              <div className="p-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-full bg-secondary/30" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24 bg-secondary/30" />
+                    <Skeleton className="h-3 w-32 bg-secondary/30" />
+                  </div>
+                </div>
+                <Skeleton className="h-4 w-full bg-secondary/30" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
-  if (!vessel) {
+  if (!capsule) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
-        <h1 className="text-3xl mb-4">Vessel Not Found</h1>
-        <p className="text-muted-foreground">This tag doesn't exist in our system.</p>
+        <Search className="h-16 w-16 text-muted-foreground/30 mb-6" />
+        <h1 className="text-3xl mb-4 font-serif">Capsule Not Found</h1>
+        <p className="text-muted-foreground max-w-xs">
+          This tag hasn't been registered in our system yet.
+        </p>
       </div>
     );
   }
@@ -190,7 +219,7 @@ export default function Seal({ vessel: initialVessel, existingMemory: initialMem
       <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-6 text-center max-w-md mx-auto">
         <CheckCircle className="h-20 w-20 text-primary mb-8" />
         <h1 className="text-4xl mb-4 font-serif">Sealed</h1>
-        <p className="text-xl text-muted-foreground mb-12">This memory is now anchored to your vessel.</p>
+        <p className="text-xl text-muted-foreground mb-12">This memory is now sealed to your capsule.</p>
         
         <div className="flex flex-col gap-4 w-full">
           <Button 
@@ -208,25 +237,35 @@ export default function Seal({ vessel: initialVessel, existingMemory: initialMem
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] py-8 px-6 max-w-lg mx-auto flex flex-col">
-      <div className="text-center mb-6">
+    <div className="min-h-[calc(100vh-4rem)] py-8 px-6 max-w-xl mx-auto flex flex-col">
+      <div className="relative text-center mb-6">
+        {existingMemory && existingMemory.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute left-0 top-0 h-9 w-9 p-0 rounded-full hover:bg-secondary"
+            onClick={onViewMemory}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+        )}
         <h1 className="text-2xl font-bold tracking-tight mb-1">Seal a Memory</h1>
-        <p className="text-sm text-muted-foreground font-medium">Capture a moment for this vessel.</p>
+        <p className="text-sm text-muted-foreground font-medium">Capture a moment for this capsule.</p>
       </div>
 
       <div className="space-y-5 flex-1 bg-secondary/40 border border-border p-6 rounded-3xl shadow-sm">
-        {/* Vessel Name Section - Only for first creation */}
+        {/* Capsule Name Section - Only for first creation */}
         {existingMemory?.length === 0 && (
           <div className="space-y-1.5">
-            <Label htmlFor="vesselName" className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground ml-0.5">
-              Vessel Name
+            <Label htmlFor="capsuleName" className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground ml-0.5">
+              Capsule Name
             </Label>
             <div className="relative">
               <Edit3 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground/50" />
               <Input
-                id="vesselName"
-                value={vesselName}
-                onChange={(e) => setVesselName(e.target.value)}
+                id="capsuleName"
+                value={capsuleName}
+                onChange={(e) => setCapsuleName(e.target.value)}
                 placeholder="E.g. Summer 2024, Our Wedding..."
                 className="pl-10 h-11 rounded-lg border-border focus:ring-1 focus:ring-primary/20"
               />

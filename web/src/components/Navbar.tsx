@@ -142,7 +142,7 @@ export const Navbar = () => {
                   <div className="space-y-1">
                     <h3 className="font-medium text-sm">Sign in / Create Account</h3>
                     <p className="text-xs text-muted-foreground">
-                      Enter your details to manage your vessels.
+                      Enter your details to manage your capsules.
                     </p>
                   </div>
                   <form onSubmit={(e) => handleAuth(e, 'login')} className="space-y-2">

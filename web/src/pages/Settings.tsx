@@ -141,7 +141,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="max-w-xl mx-auto px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <Button 
         variant="ghost" 
         onClick={() => navigate(-1)} 

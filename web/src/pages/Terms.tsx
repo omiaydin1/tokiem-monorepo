@@ -22,7 +22,7 @@ export default function Terms() {
         <section>
           <h2 className="text-xl font-serif text-foreground mb-4">2. Description of Service</h2>
           <p>
-            Tokiem provides a platform for users to create, store, and share digital memories ("Memories") anchored to physical vessels. 
+            Tokiem provides a platform for users to create, store, and share digital memories ("Memories") sealed to physical capsules. 
           </p>
         </section>
 
