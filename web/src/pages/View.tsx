@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { useMemoryByTagId, useUpdateCapsuleName, Memory, Capsule } from '@/hooks/useVessel';
+import { useMemoryByTagId, useUpdateCapsuleName, useIncrementHearts, Memory, Capsule } from '@/hooks/useVessel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,12 +18,14 @@ interface ViewProps {
   onAddMore?: () => void;
 }
 
-const MemoryCard = ({ memory }: { memory: Memory }) => {
+const MemoryCard = ({ memory, tagId }: { memory: Memory; tagId?: string }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [hearts, setHearts] = useState<{ id: number; x: number; y: number; size: number; rotation: number }[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const incrementHearts = useIncrementHearts(tagId);
 
   useEffect(() => {
     if (memory.media_type !== 'video' || !videoRef.current) return;
@@ -65,6 +67,30 @@ const MemoryCard = ({ memory }: { memory: Memory }) => {
     }
   };
 
+  const handleHeartClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Create multiple hearts for an "explosion" feel
+    const newHearts = Array.from({ length: 4 }).map((_, i) => ({
+      id: Date.now() + i,
+      x: (Math.random() - 0.5) * 120, // wider spread
+      y: -20 - Math.random() * 150, // float up from button
+      size: 12 + Math.random() * 18,
+      rotation: (Math.random() - 0.5) * 60
+    }));
+
+    setHearts(prev => [...prev, ...newHearts]);
+    
+    // Increment in DB
+    incrementHearts.mutate(memory.id);
+
+    // Remove hearts after animation
+    setTimeout(() => {
+      setHearts(prev => prev.filter(h => !newHearts.find(nh => nh.id === h.id)));
+    }, 1000);
+  };
+
   const formattedDate = new Date(memory.created_at).toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -77,13 +103,13 @@ const MemoryCard = ({ memory }: { memory: Memory }) => {
   return (
     <div ref={containerRef} className="w-full bg-secondary/40 rounded-3xl overflow-hidden border border-border shadow-sm transition-all hover:border-primary/20 duration-500 group mb-8">
       {/* Media Section */}
-      <div className="relative w-full bg-muted overflow-hidden flex items-center justify-center">
+      <div className="relative w-full bg-muted overflow-hidden flex items-center justify-center min-h-[200px]">
         {memory.media_type === 'video' && (
           <>
             <video
               ref={videoRef}
               src={memory.media_url}
-              className="w-full h-auto max-h-[70vh]"
+              className="w-full h-auto"
               playsInline
               muted={isMuted}
               loop
@@ -104,7 +130,7 @@ const MemoryCard = ({ memory }: { memory: Memory }) => {
         {memory.media_type === 'image' && (
           <img
             src={memory.media_url}
-            className="w-full h-auto max-h-[80vh] object-contain"
+            className="w-full h-auto block"
             alt="Memory"
           />
         )}
@@ -163,8 +189,45 @@ const MemoryCard = ({ memory }: { memory: Memory }) => {
               </div>
             </div>
           </div>
-          <div className="h-7 w-7 rounded-full bg-secondary/20 flex items-center justify-center border border-border/50">
-            <Heart className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary transition-colors group-hover:fill-primary/10" />
+          
+          <div className="flex items-center gap-2">
+            {memory.heart_count ? (
+              <span className="text-xs md:text-sm font-bold text-muted-foreground/60 uppercase tracking-tighter">
+                {memory.heart_count}
+              </span>
+            ) : null}
+            <div className="relative">
+              {/* Heart Pop Animation Elements */}
+              {hearts.map(heart => (
+                <div
+                  key={heart.id}
+                  className="absolute pointer-events-none animate-out fade-out zoom-out duration-1000 fill-mode-forwards"
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    transform: `translate(calc(-50% + ${heart.x}px), calc(-50% + ${heart.y}px)) rotate(${heart.rotation}deg)`,
+                    zIndex: 40
+                  }}
+                >
+                  <Heart 
+                    className="text-primary fill-primary" 
+                    style={{ width: heart.size, height: heart.size }} 
+                  />
+                </div>
+              ))}
+              
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10 rounded-full bg-secondary/20 flex items-center justify-center border border-border/50 hover:bg-primary/10 hover:border-primary/30 transition-all active:scale-110 group/heart"
+                onClick={handleHeartClick}
+              >
+                <Heart className={cn(
+                  "h-5 w-5 text-muted-foreground/40 group-hover/heart:text-primary transition-colors group-hover/heart:fill-primary/10",
+                  memory.heart_count && memory.heart_count > 0 && "text-primary/40"
+                )} />
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -188,7 +251,7 @@ export default function View({ memories: initialMemories, tagId: propTagId, caps
   const [editedName, setEditedName] = useState('');
   const { toast } = useToast();
 
-  const getVesselIcon = (type: string | null) => {
+  const getCapsuleIcon = (type: string | null) => {
     switch (type) {
       case 'ring': return <CircleDot className="h-5 w-5 text-primary" />;
       case 'bracelet': return <Circle className="h-5 w-5 text-primary" />;
@@ -321,7 +384,7 @@ export default function View({ memories: initialMemories, tagId: propTagId, caps
             ) : (
               <div className="flex items-center gap-2 md:gap-3 min-w-0">
                 <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-secondary/50 border border-border flex items-center justify-center shrink-0">
-                  {getVesselIcon(capsule?.jewelry_type || 'necklace')}
+                  {getCapsuleIcon(capsule?.jewelry_type || 'necklace')}
                 </div>
                 <h1 className="text-xl md:text-4xl font-bold tracking-tight text-foreground truncate leading-tight">
                   {capsule?.name || 'Tokiem Capsule'}
@@ -362,7 +425,7 @@ export default function View({ memories: initialMemories, tagId: propTagId, caps
               className="animate-in fade-in slide-in-from-bottom-8 duration-1000"
               style={{ animationDelay: `${index * 200}ms` }}
             >
-              <MemoryCard memory={memory} />
+              <MemoryCard memory={memory} tagId={tagId} />
             </div>
           ))}
         </div>

@@ -19,6 +19,7 @@ export interface Memory {
   gifter_name?: string | null;
   note_text: string | null;
   created_at: string;
+  heart_count?: number;
   sender_profile?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -87,5 +88,46 @@ export function useMemoryByTagId(tagId: string | undefined) {
     },
     enabled: !!tagId,
     retry: false,
+  });
+}
+
+export function useIncrementHearts(tagId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (memoryId: string) => {
+      if (!tagId) throw new Error('No tag ID provided');
+      return apiFetch<Memory>(`/vessels/${tagId}/memory/${memoryId}/heart`, {
+        method: 'POST',
+      });
+    },
+    onMutate: async (memoryId) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ['memory', tagId] });
+
+      // Snapshot the previous value
+      const previousMemories = queryClient.getQueryData<Memory[]>(['memory', tagId]);
+
+      // Optimistically update to the new value
+      if (previousMemories) {
+        queryClient.setQueryData<Memory[]>(['memory', tagId], 
+          previousMemories.map(m => 
+            m.id === memoryId ? { ...m, heart_count: (m.heart_count || 0) + 1 } : m
+          )
+        );
+      }
+
+      // Return a context object with the snapshotted value
+      return { previousMemories };
+    },
+    onError: (err, memoryId, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousMemories) {
+        queryClient.setQueryData(['memory', tagId], context.previousMemories);
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure we are in sync with the server
+      queryClient.invalidateQueries({ queryKey: ['memory', tagId] });
+    },
   });
 }

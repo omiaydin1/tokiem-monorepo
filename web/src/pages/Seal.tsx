@@ -50,7 +50,7 @@ export default function Seal({ capsule: initialCapsule, existingMemory: initialM
     return () => subscription.unsubscribe();
   }, []);
 
-  const { data: fetchedCapsule, isLoading: vesselLoading } = useCapsule(
+  const { data: fetchedCapsule, isLoading: capsuleLoading } = useCapsule(
     initialCapsule ? undefined : tagId
   );
   const { data: fetchedMemory, isLoading: memoryLoading } = useMemoryByTagId(
@@ -169,7 +169,7 @@ export default function Seal({ capsule: initialCapsule, existingMemory: initialM
     },
   });
 
-  if (vesselLoading || memoryLoading) {
+  if (capsuleLoading || memoryLoading) {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex flex-col bg-background">
         <div className="max-w-2xl mx-auto w-full px-4 md:px-6 pt-10 md:pt-12 pb-6 md:pb-8">

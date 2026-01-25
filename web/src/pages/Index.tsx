@@ -8,10 +8,10 @@ import { useCapsule, Capsule, Memory } from '@/hooks/useVessel';
 
 const Index = () => {
   const [session, setSession] = useState<any>(null);
-  const [myVessels, setMyVessels] = useState<Capsule[]>([]);
-  const [vesselsLoading, setVesselsLoading] = useState(false);
+  const [myCapsules, setMyCapsules] = useState<Capsule[]>([]);
+  const [capsulesLoading, setCapsulesLoading] = useState(false);
 
-  const getVesselIcon = (type: string | null) => {
+  const getCapsuleIcon = (type: string | null) => {
     switch (type) {
       case 'ring': return <CircleDot className="h-5 w-5 text-primary" />;
       case 'bracelet': return <Circle className="h-5 w-5 text-primary" />;
@@ -23,33 +23,33 @@ const Index = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchMyVessels(session.access_token);
+      if (session) fetchMyCapsules(session.access_token);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchMyVessels(session.access_token);
-      else setMyVessels([]);
+      if (session) fetchMyCapsules(session.access_token);
+      else setMyCapsules([]);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchMyVessels = async (token: string) => {
-    setVesselsLoading(true);
+  const fetchMyCapsules = async (token: string) => {
+    setCapsulesLoading(true);
     try {
       const data = await apiFetch<Capsule[]>('/vessels', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
-      setMyVessels(data);
+      setMyCapsules(data);
     } catch (error) {
       console.error('Error fetching capsules:', error);
     } finally {
-      setVesselsLoading(false);
+      setCapsulesLoading(false);
     }
   };
 
@@ -84,7 +84,7 @@ const Index = () => {
             <div className="text-left space-y-4">
               <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground px-2">Your Capsules</h3>
 
-              {vesselsLoading ? (
+              {capsulesLoading ? (
                 <div className="grid gap-3">
                   {[1, 2].map((i) => (
                     <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-secondary/20 border border-border/50 animate-pulse">
@@ -99,9 +99,9 @@ const Index = () => {
                     </div>
                   ))}
                 </div>
-              ) : myVessels.length > 0 ? (
+              ) : myCapsules.length > 0 ? (
                 <div className="grid gap-3">
-                  {myVessels.map((v) => (
+                  {myCapsules.map((v) => (
                     <Link
                       key={v.id}
                       to={`/v/${v.tag_id}`}
@@ -109,7 +109,7 @@ const Index = () => {
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-11 h-11 rounded-xl bg-background border border-border shadow-sm flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
-                          {getVesselIcon(v.jewelry_type)}
+                          {getCapsuleIcon(v.jewelry_type)}
                         </div>
                         <div className="flex flex-col text-left">
                           <span className="font-bold text-base tracking-tight">{v.name || `Capsule ${v.tag_id}`}</span>

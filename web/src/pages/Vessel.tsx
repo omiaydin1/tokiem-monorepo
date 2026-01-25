@@ -13,7 +13,7 @@ export default function Vessel() {
   const [justSealed, setJustSealed] = useState(false);
   const [session, setSession] = useState<any>(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const { data: capsule, isLoading: vesselLoading, error: vesselError } = useCapsule(tagId);
+  const { data: capsule, isLoading: capsuleLoading, error: capsuleError } = useCapsule(tagId);
   const { data: memory, isLoading: memoryLoading } = useMemoryByTagId(tagId);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function Vessel() {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (vesselLoading || memoryLoading || !authChecked || !capsule || !memory) {
+  if (capsuleLoading || memoryLoading || !authChecked || !capsule || !memory) {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex flex-col bg-background">
         <div className="max-w-2xl mx-auto w-full px-4 md:px-6 pt-10 md:pt-12 pb-6 md:pb-8">
@@ -66,7 +66,7 @@ export default function Vessel() {
   }
 
   // Handle case where vessel doesn't exist in DB
-  if (vesselError || !capsule) {
+  if (capsuleError || !capsule) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
         <Search className="h-16 w-16 text-muted-foreground/30 mb-6" />

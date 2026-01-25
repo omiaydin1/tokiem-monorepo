@@ -34,4 +34,13 @@ export class MemoriesController {
   ) {
     return this.memoriesService.create(tagId, createMemoryDto, req.user.id);
   }
+
+  @Post(':memoryId/heart')
+  @ApiOperation({ summary: 'Increment heart count for a memory' })
+  @ApiResponse({ status: 200, type: MemoryResponse })
+  incrementHearts(
+    @Param('memoryId') memoryId: string,
+  ) {
+    return this.memoriesService.incrementHearts(memoryId);
+  }
 }

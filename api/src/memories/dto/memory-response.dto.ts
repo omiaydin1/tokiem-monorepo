@@ -10,14 +10,17 @@ export class MemoryResponse {
   @ApiProperty({ example: 'https://supabase.co/storage/v1/object/public/memories/uuid/file.mp4' })
   media_url: string;
 
-  @ApiProperty({ enum: ['video', 'audio'], example: 'video' })
-  media_type: 'video' | 'audio';
+  @ApiProperty({ enum: ['video', 'audio', 'image'], example: 'video' })
+  media_type: 'video' | 'audio' | 'image';
 
-  @ApiProperty({ example: 'John Doe' })
-  gifter_name: string;
+  @ApiProperty({ example: 'John Doe', nullable: true })
+  gifter_name: string | null;
 
   @ApiProperty({ example: 'Happy birthday!', nullable: true })
   note_text: string | null;
+
+  @ApiProperty({ example: 0 })
+  heart_count: number;
 
   @ApiProperty({ example: '2024-01-24T12:00:00Z' })
   created_at: string;
