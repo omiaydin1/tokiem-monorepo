@@ -32,31 +32,31 @@ export default function Vessel() {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (vesselLoading || memoryLoading || !authChecked) {
+  if (vesselLoading || memoryLoading || !authChecked || !capsule || !memory) {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex flex-col bg-background">
-        <div className="max-w-2xl mx-auto w-full px-6 pt-12 pb-8">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 flex-1">
-              <Skeleton className="w-10 h-10 rounded-xl bg-secondary/30" />
-              <Skeleton className="h-10 w-48 bg-secondary/30" />
+        <div className="max-w-2xl mx-auto w-full px-4 md:px-6 pt-10 md:pt-12 pb-6 md:pb-8">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 md:gap-3 flex-1">
+              <Skeleton className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-secondary/30" />
+              <Skeleton className="h-8 w-32 md:w-48 bg-secondary/30" />
             </div>
-            <Skeleton className="h-10 w-32 rounded-xl bg-secondary/30" />
+            <Skeleton className="h-9 md:h-10 w-20 md:w-32 rounded-xl bg-secondary/30" />
           </div>
         </div>
-        <div className="max-w-2xl mx-auto w-full px-4 py-4">
+        <div className="max-w-xl mx-auto w-full px-4 py-4">
           {[1, 2].map((i) => (
-            <div key={i} className="w-full bg-secondary/20 rounded-3xl overflow-hidden border border-border mb-8 animate-pulse">
-              <Skeleton className="w-full aspect-video bg-secondary/30" />
-              <div className="p-6 space-y-4">
+            <div key={i} className="w-full bg-secondary/10 rounded-3xl overflow-hidden border border-border/50 mb-8">
+              <Skeleton className="w-full aspect-video bg-secondary/20" />
+              <div className="p-5 space-y-4">
                 <div className="flex items-center gap-3">
-                  <Skeleton className="h-10 w-10 rounded-full bg-secondary/30" />
+                  <Skeleton className="h-9 w-9 rounded-full bg-secondary/20" />
                   <div className="space-y-2">
-                    <Skeleton className="h-4 w-24 bg-secondary/30" />
-                    <Skeleton className="h-3 w-32 bg-secondary/30" />
+                    <Skeleton className="h-3 w-20 bg-secondary/20" />
+                    <Skeleton className="h-2 w-24 bg-secondary/20" />
                   </div>
                 </div>
-                <Skeleton className="h-4 w-full bg-secondary/30" />
+                <Skeleton className="h-3 w-full bg-secondary/20" />
               </div>
             </div>
           ))}
